@@ -48,6 +48,30 @@ git push -u origin main
 
 ## Release Build And Upload
 
+When the user says "发布版本" or asks to publish a new APK release, use this runbook. Do not skip the version and install checks.
+
+### Version Rules
+
+Before every public release, update `app/build.gradle.kts`:
+
+- Keep `applicationId = "com.personal.biji.android"` unchanged so the APK upgrades the existing app instead of installing as a different package.
+- Increase `versionCode` to a value greater than every previously published APK. Android will reject installs or upgrades when the new `versionCode` is lower than the installed one.
+- Set `versionName` to the release name shown to users.
+- Use a tag that matches `versionName`, normalized as `v<major>.<minor>.<patch>`. For example, if `versionName = "1.0.1"`, use tag `v1.0.1`.
+- Keep release signing consistent across releases. The current project signs `release` with the debug signing config in `app/build.gradle.kts`; do not switch signing keys for an existing package unless the user explicitly accepts that old installs may not be upgradeable.
+
+Example version bump:
+
+```kotlin
+defaultConfig {
+    applicationId = "com.personal.biji.android"
+    versionCode = 2
+    versionName = "1.0.1"
+}
+```
+
+### Build
+
 The release APK is built from `android/`:
 
 ```sh
@@ -65,28 +89,69 @@ The generated APK is:
 app/build/outputs/apk/release/app-release.apk
 ```
 
-Release tags should match the app version. For `versionName = "1.0"` and `versionCode = 1`, use:
+### Install Verification
+
+Before uploading, verify the APK can install and upgrade cleanly on an emulator or attached device:
 
 ```sh
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
+adb install -r app/build/outputs/apk/release/app-release.apk
+adb shell am start -W -n com.personal.biji.android/.MainActivity
 ```
 
-Upload the APK to GitHub Releases with GitHub CLI when authenticated:
+If `adb install -r` fails with `INSTALL_FAILED_VERSION_DOWNGRADE`, increase `versionCode` and rebuild. If it fails with a signature or package conflict, confirm `applicationId` did not change and the release signing key/config is the same as the already installed app. Do not publish an APK that cannot be installed or used to upgrade the previous release.
+
+Record the APK digest before upload:
 
 ```sh
-gh release create v1.0.0 app/build/outputs/apk/release/app-release.apk \
+shasum -a 256 app/build/outputs/apk/release/app-release.apk
+```
+
+### Git Tag
+
+Release tags must match the app version. Replace `v1.0.1` with the current release tag:
+
+```sh
+git status --short
+git add app/build.gradle.kts AGENTS.md README.md
+git commit -m "Release v1.0.1"
+git push
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
+```
+
+If there are no source or documentation changes besides the already committed version bump, do not create an empty commit.
+
+### GitHub Release Upload
+
+Upload the APK to GitHub Releases with GitHub CLI. First confirm auth:
+
+```sh
+gh auth status
+```
+
+Create the release and attach the APK:
+
+```sh
+gh release create v1.0.1 app/build/outputs/apk/release/app-release.apk \
   --repo yaowencurry/wuji-android \
-  --title "v1.0.0" \
-  --notes "Initial Android release."
+  --title "v1.0.1" \
+  --notes "Android release v1.0.1."
 ```
 
 If the tag already exists, attach or replace the APK on the existing release:
 
 ```sh
-gh release upload v1.0.0 app/build/outputs/apk/release/app-release.apk \
+gh release upload v1.0.1 app/build/outputs/apk/release/app-release.apk \
   --repo yaowencurry/wuji-android \
   --clobber
+```
+
+After upload, verify GitHub recorded the asset and digest:
+
+```sh
+gh release view v1.0.1 \
+  --repo yaowencurry/wuji-android \
+  --json tagName,name,url,assets,isDraft,isPrerelease,publishedAt
 ```
 
 The emulator uses `http://10.0.2.2:8080/` as the default API base URL. Override `BuildConfig.BIJI_API_BASE_URL` only when the task requires another environment.
