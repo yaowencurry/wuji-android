@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.Biji" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#2ABB6A</item>
+        <item name="android:navigationBarColor">#FCFEFD</item>
+        <item name="android:statusBarColor">#FCFEFD</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

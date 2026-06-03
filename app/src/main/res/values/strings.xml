@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">吾记</string>
+    <string name="widget_description">快速创建读书笔记</string>
+    <string name="widget_text">文字</string>
+    <string name="widget_camera">拍照</string>
+    <string name="widget_gallery">相册</string>
+</resources>

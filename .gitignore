@@ -1,0 +1,16 @@
+.DS_Store
+
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local configuration
+local.properties
+
+# IDE files
+.idea/
+*.iml
+
+# Kotlin
+.kotlin/
